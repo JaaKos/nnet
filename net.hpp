@@ -1,6 +1,13 @@
 #pragma once
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <array>
+#include <sstream>
+#include <chrono>
+#include <iomanip>
+
 
 struct Neuron 
 {
@@ -14,6 +21,7 @@ struct Neuron
 struct Layer
 {
     std::vector <Neuron> neurons;
+    std::vector <double> mse;
 };
 
 class net
@@ -22,11 +30,10 @@ class net
     std::vector <double> label_to_vector(const int label);
 
 public:
-    Layer FirstLayer;
-    Layer OutputLayer;
+    std::vector <Layer> layers;
     std::vector <double> prediction;
 
-    net();
+    net(const std::vector<int> & layer_sizes, const int input_size);
     void make_prediction(const std::array<double, 784> & input);
 
     double sigmoid(const double x);
@@ -35,7 +42,11 @@ public:
 
     std::vector <double> d_mean_square_error(const int label);
     std::vector <double> d_sigmoid_vector (const Layer & layer);
-    std::vector <double> neuron_representation_in_mse(const int label, const Layer & layer, const Layer & next_layer);
-    void adjust_biases(const int label, Layer & layer, const Layer & next_layer);
-    void adjust_weights(const int label, Layer & layer, const Layer & next_layer);
+    void calculate_d_mse_for_all_layers(const int label);
+    void adjust_biases();
+    void adjust_weights();
+    void back_prop(const int label);
+
+    void save_network(std::string filename);
+    void load_network(std::string filename);
 };
