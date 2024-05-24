@@ -2,13 +2,16 @@
 
 int main()
 {
-    net myNet({64, 10}, 784);
+    const int epochs = 10;
+    const int input_size = 784;
+
+    net myNet({64, 10}, input_size);
     
     std::ifstream trainfile;
     std::ifstream testfile;
     std::string line;
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < epochs; i++)
     {
         if (!trainfile.is_open()) trainfile.open("data/mnist_train.csv");
         if (!testfile.is_open()) testfile.open("data/mnist_test.csv");
@@ -79,8 +82,9 @@ int main()
         std::cout << "Incorrect: " << incorrect << std::endl;
 
         trainfile.close();
-        testfile.close();
-   }
+        //testfile.close();
+    }
 
+    if (testfile.is_open()) testfile.close();
     myNet.save_network("network/params.csv");
 }
