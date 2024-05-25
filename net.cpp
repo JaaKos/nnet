@@ -40,11 +40,26 @@ net::net(const std::vector<int> & layer_sizes, const int input_size)
 }
 
 
-void net::make_prediction(const std::array<double, 784> & input)
+void net::make_prediction(const std::array<double, 784> & input, const bool dropout)
 {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+
     this->prediction.clear();
     Layer & FirstLayer = this->layers[0];
     std::vector<double> FirstLayerInput(input.begin(), input.end());
+
+    /*if (dropout) 
+    {
+        for (int i = 0; i < FirstLayerInput.size(); i++)
+        {
+            if (dis(rd) < this->dropout_rate)
+            {
+                FirstLayerInput[i] = 0;
+            }
+        }
+    }*/
 
     for (int i = 0; i < FirstLayer.neurons.size(); i++) 
     {
@@ -57,6 +72,10 @@ void net::make_prediction(const std::array<double, 784> & input)
         FirstLayer.neurons[i].output += FirstLayer.neurons[i].bias;
         FirstLayer.neurons[i].z_value = FirstLayer.neurons[i].output;
         FirstLayer.neurons[i].output = sigmoid(FirstLayer.neurons[i].output);
+        if (dropout && dis(rd) < this->dropout_rate)
+        {
+            FirstLayer.neurons[i].output = 0;
+        }
         FirstLayer.neurons[i].input.clear();
     }
 
@@ -78,6 +97,10 @@ void net::make_prediction(const std::array<double, 784> & input)
             this->layers[i].neurons[j].z_value = this->layers[i].neurons[j].output;
             this->layers[i].neurons[j].output = sigmoid(this->layers[i].neurons[j].output);
             if (i == this->layers.size() - 1) this->prediction.push_back(this->layers[i].neurons[j].output);
+            if ((dropout && dis(rd) < this->dropout_rate) && i != this->layers.size() - 1)
+            {
+                this->layers[i].neurons[j].output = 0;
+            }
             this->layers[i].neurons[j].input.clear();
         }
     }

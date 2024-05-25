@@ -27,6 +27,7 @@ struct Layer
 class net
 {
     double learning_rate = 0.1;
+    double dropout_rate = 0.2;
     std::vector <double> label_to_vector(const int label);
 
 public:
@@ -34,7 +35,7 @@ public:
     std::vector <double> prediction;
 
     net(const std::vector<int> & layer_sizes, const int input_size);
-    void make_prediction(const std::array<double, 784> & input);
+    void make_prediction(const std::array<double, 784> & input, const bool dropout = false);
 
     double sigmoid(const double x);
     double d_sigmoid(const double x);

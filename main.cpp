@@ -5,7 +5,7 @@ int main()
     const int epochs = 10;
     const int input_size = 784;
 
-    net myNet({64, 10}, input_size);
+    net myNet({60, 10}, input_size);
     
     std::ifstream trainfile;
     std::ifstream testfile;
@@ -34,7 +34,7 @@ int main()
                 nums[arrayIndex++] = std::stod(value) / 255.0;
             }
 
-            myNet.make_prediction(nums);
+            myNet.make_prediction(nums, true);
             myNet.back_prop(label);
         }
 
@@ -82,7 +82,7 @@ int main()
         std::cout << "Incorrect: " << incorrect << std::endl;
 
         trainfile.close();
-        //testfile.close();
+        testfile.close();
     }
 
     if (testfile.is_open()) testfile.close();
