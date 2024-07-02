@@ -1,16 +1,17 @@
 #include "net.hpp"
+#include <math.h>
 
 int main()
 {
     const int epochs = 10;
     const int input_size = 784;
 
-    net myNet({60, 10}, input_size);
-    
+    net myNet({4, 4}, {60, 10}, input_size);
+
     std::ifstream trainfile;
     std::ifstream testfile;
     std::string line;
-
+    
     for (int i = 0; i < epochs; i++)
     {
         if (!trainfile.is_open()) trainfile.open("data/mnist_train.csv");
@@ -23,7 +24,8 @@ int main()
         {
             std::stringstream csv_line(line);
 
-            std::array <double, 784> nums;
+            std::vector <double> nums;
+            nums.resize(784, 0);
             int arrayIndex = 0;
 
             std::string value;
@@ -34,7 +36,7 @@ int main()
                 nums[arrayIndex++] = std::stod(value) / 255.0;
             }
 
-            myNet.make_prediction(nums, true);
+            myNet.make_prediction(nums, false);
             myNet.back_prop(label);
         }
 
@@ -49,7 +51,8 @@ int main()
             std::getline(testfile, line);
             std::stringstream csv_line(line);
 
-            std::array <double, 784> nums;
+            std::vector <double> nums;
+            nums.resize(784, 0);
             int arrayIndex = 0;
 
             std::string value;
@@ -83,8 +86,12 @@ int main()
 
         trainfile.close();
         testfile.close();
+
+        myNet.set_learning_rate(0.8 * myNet.get_learning_rate());
     }
 
+    if (trainfile.is_open()) trainfile.close();
     if (testfile.is_open()) testfile.close();
-    myNet.save_network("network/params.csv");
+
+    myNet.save_network("network/fe_params.csv", "network/fc_params.csv");
 }
