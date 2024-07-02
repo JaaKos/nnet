@@ -6,7 +6,7 @@ int main()
     const int epochs = 10;
     const int input_size = 784;
 
-    net myNet({4, 4}, {60, 10}, input_size);
+    net myNet({4, 8}, {60, 10}, input_size);
 
     std::ifstream trainfile;
     std::ifstream testfile;
@@ -22,6 +22,10 @@ int main()
         start = std::chrono::system_clock::now();
         while (std::getline(trainfile, line))
         {
+            // static int count = 0;
+            // count++;
+
+            // if (count % 1000 == 0) std::cout << count << " lines processed" << std::endl;
             std::stringstream csv_line(line);
 
             std::vector <double> nums;

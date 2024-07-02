@@ -343,7 +343,7 @@ void net::calculate_d_mse_for_all_layers(const int label)
     }
 }
 
-void net::calculate_d_mse_for_all_fe_layers() //TODO
+void net::calculate_d_mse_for_all_fe_layers() //TODO crashes if layer n has less filters than n-1
 {
     std::vector <double> error(dense_input_size, 0);
     
@@ -381,14 +381,15 @@ void net::calculate_d_mse_for_all_fe_layers() //TODO
     for (int j = 0; j < firstDenseLayerInput.size(); j++)
     {
         mse_per_neuron.push_back(d_relu(firstDenseLayerInput[j]) * error[j]);
-        // std::cout << dense_input_size << " " << lastConvLayer.convvector.size() << " " << error.size() << std::endl;
+        // std::cout << dense_input_size << " " << firstDenseLayerInput.size() << " " << error.size() << std::endl;
         if (mse_per_neuron.size() == conv2dInputSize)
         {
             Matrix conv2dmse = Matrix(convRowSize, convColSize, mse_per_neuron).upsample(lastConvLayer.d_featuremaps_upsample_positions[filter]);
-            if (conv2dmse.getRows() % 2 == 0) conv2dmse = conv2dmse.addDimensions(-1, -1);
-            // std::cout << conv2dmse.getRows() << " " << conv2dmse.getColumns() << std::endl;
+            if (lastConvLayer.input_no_activation.getRows() - conv2dmse.getRows() != 2) conv2dmse = conv2dmse.addDimensions(-1, -1);
 
             lastConvLayer.filters[filter].mse = lastConvLayer.input_no_activation.conv2d(conv2dmse);
+            // lastConvLayer.filters[filter].mse.print();
+            // std::cout << std::endl;
             lastConvLayer.d_featuremaps.push_back(conv2dmse);
             // lastConvLayer.d_featuremaps_upsample_positions[filter].print();
             // std::cout << std::endl;
@@ -403,7 +404,16 @@ void net::calculate_d_mse_for_all_fe_layers() //TODO
         for (int j = 0; j < this->conv2d_layers[i].filters.size(); j++)
         {
             this->conv2d_layers[i].d_featuremaps[j] = conv2d_layers[i+1].d_featuremaps[j].d_conv2d(this->conv2d_layers[i].filters[j].weights);
-            Matrix upsampled_fmap = this->conv2d_layers[i].d_featuremaps[j].upsample(conv2d_layers[i].d_featuremaps_upsample_positions[j]);
+            Matrix upsampled_fmap = this->conv2d_layers[i].d_featuremaps[j];
+            // std::cout << upsampled_fmap.getRows() << " " << conv2d_layers[i].featuremaps_no_activation[j].getRows() << std::endl;
+            for (int k = 0; k < upsampled_fmap.getRows(); k++)
+            {
+                for (int l = 0; l < upsampled_fmap.getColumns(); l++)
+                {
+                    upsampled_fmap[k][l] *= d_relu(this->conv2d_layers[i].featuremaps_no_activation[j][k][l]);
+                }
+            }
+            upsampled_fmap = upsampled_fmap.upsample(this->conv2d_layers[i].d_featuremaps_upsample_positions[j]);
             this->conv2d_layers[i].filters[j].mse = this->conv2d_layers[i].input_no_activation.conv2d(upsampled_fmap);
             // this->conv2d_layers[i].filters[j].mse.print();
             // std::cout << std::endl;
