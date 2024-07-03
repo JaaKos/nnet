@@ -1,2 +1,2 @@
-![demo](images/demo)
-![demo2](images/demo2)
+![demo](images/demo.png)
+![demo2](images/demo2.png)
