@@ -6,7 +6,7 @@ int main()
     const int epochs = 10;
     const int input_size = 784;
 
-    net myNet({4, 8}, {60, 10}, input_size);
+    net myNet({8, 16}, {60, 10}, input_size);
 
     std::ifstream trainfile;
     std::ifstream testfile;
@@ -14,6 +14,8 @@ int main()
     
     for (int i = 0; i < epochs; i++)
     {
+        int train_correct = 0;
+        int train_incorrect = 0;
         if (!trainfile.is_open()) trainfile.open("data/mnist_train.csv");
         if (!testfile.is_open()) testfile.open("data/mnist_test.csv");
 
@@ -22,10 +24,15 @@ int main()
         start = std::chrono::system_clock::now();
         while (std::getline(trainfile, line))
         {
-            // static int count = 0;
-            // count++;
+            static int count = 0;
+            count++;
 
-            // if (count % 1000 == 0) std::cout << count << " lines processed" << std::endl;
+            if (count % 1000 == 0)
+            {
+                std::cout << "Correct: " << train_correct << " Incorrect: " << train_incorrect  << std::endl;
+                train_correct = 0;
+                train_incorrect = 0;
+            } 
             std::stringstream csv_line(line);
 
             std::vector <double> nums;
@@ -40,8 +47,22 @@ int main()
                 nums[arrayIndex++] = std::stod(value) / 255.0;
             }
 
-            myNet.make_prediction(nums, false);
-            myNet.back_prop(label);
+            myNet.makePrediction(nums, false);
+            myNet.applyBackPropagation(label);
+
+            auto test = myNet.prediction;
+            int index = 0;
+            double max = 0;
+            for (int k = 0; k < test.size(); k++)
+            {
+                if (test[k] > max) 
+                {
+                    max = test[k]; 
+                    index = k;
+                }
+            }
+            if (index == label) train_correct++;
+            else train_incorrect++;
         }
 
         end = std::chrono::system_clock::now();
@@ -67,7 +88,7 @@ int main()
                 nums[arrayIndex++] = std::stod(value) / 255.0;
             }
 
-            myNet.make_prediction(nums);
+            myNet.makePrediction(nums);
 
             auto test = myNet.prediction;
             int index = 0;
@@ -83,19 +104,24 @@ int main()
             if (index == label) correct++;
             else incorrect++;
         }
+
+        std::cout << std::endl;
         std::cout << "Time taken: " << elapsed_seconds.count() << "s" << std::endl;
 
         std::cout << "Correct: " << correct << std::endl;
         std::cout << "Incorrect: " << incorrect << std::endl;
 
+        double accuracy = static_cast <double>(correct) / static_cast <double>(correct + incorrect);
+        std::cout << std::fixed << std::setprecision(2) << "Accuracy: " << accuracy << std::endl << std::endl;
+
         trainfile.close();
         testfile.close();
 
-        myNet.set_learning_rate(0.8 * myNet.get_learning_rate());
+        if (accuracy > 0.9) myNet.setLearningRate(0.9 * myNet.getLearningRate());
     }
 
     if (trainfile.is_open()) trainfile.close();
     if (testfile.is_open()) testfile.close();
 
-    myNet.save_network("network/fe_params.csv", "network/fc_params.csv");
+    myNet.saveNetwork("network/fe_params.csv", "network/fc_params.csv");
 }

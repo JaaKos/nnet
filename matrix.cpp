@@ -3,42 +3,27 @@
 Matrix::Matrix() : rows(0), columns(0)
 {
     matrix.resize(0, std::vector<double>(0));
-    //set_all_to_zero();
 }
 
 Matrix::Matrix(int rows, int columns) : rows(rows), columns(columns)
 {
     matrix.resize(rows, std::vector<double>(columns));
-    //set_all_to_zero();
 }
 
 Matrix::Matrix(std::vector<std::vector<double>> matrix) : matrix(matrix)
 {
     this->rows = matrix.size();
     this->columns = matrix[0].size();
-    //set_all_to_zero();
 }
 
 Matrix::Matrix(int rows, int columns, std::vector<double> elements) : rows(rows), columns(columns)
 {
     matrix.resize(rows, std::vector<double>(columns));
-    //set_all_to_zero();
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < columns; j++)
         {
             matrix[i][j] = elements[i * columns + j];
-        }
-    }
-}
-
-void Matrix::set_all_to_zero()
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < columns; j++)
-        {
-            matrix[i][j] = 0;
         }
     }
 }
@@ -211,7 +196,7 @@ Matrix sumAll(std::vector<Matrix> matrices)
     return newmatrix;
 }
 
-Matrix Matrix::maxpool(const int X, const int Y, Matrix & outputLocations)
+Matrix Matrix::maxPool(const int X, const int Y, Matrix & outputLocations)
 {
     if (X <= 0 || Y <= 0)
     {
@@ -254,9 +239,9 @@ Matrix Matrix::maxpool(const int X, const int Y, Matrix & outputLocations)
     return newmatrix;
 }
 
-Matrix Matrix::upsample(Matrix & outputLocations)
+Matrix Matrix::upSample(Matrix & output_locations)
 {
-    Matrix newmatrix = Matrix(outputLocations.getRows(), outputLocations.getColumns());
+    Matrix newmatrix = Matrix(output_locations.getRows(), output_locations.getColumns());
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < columns; j++)
@@ -265,15 +250,27 @@ Matrix Matrix::upsample(Matrix & outputLocations)
             int posY = j*2;
             int posX2 = i*2 + 1;
             int posY2 = j*2 + 1;
-            newmatrix.matrix[posX][posY] = matrix[i][j] * outputLocations.matrix[i][j];
-            newmatrix.matrix[posX2][posY] = matrix[i][j] * outputLocations.matrix[i][j];
-            newmatrix.matrix[posX][posY2] = matrix[i][j] * outputLocations.matrix[i][j];
-            newmatrix.matrix[posX2][posY2] = matrix[i][j] * outputLocations.matrix[i][j];
+            newmatrix.matrix[posX][posY] = matrix[i][j] * output_locations.matrix[i][j];
+            newmatrix.matrix[posX2][posY] = matrix[i][j] * output_locations.matrix[i][j];
+            newmatrix.matrix[posX][posY2] = matrix[i][j] * output_locations.matrix[i][j];
+            newmatrix.matrix[posX2][posY2] = matrix[i][j] * output_locations.matrix[i][j];
         }
     }
     return newmatrix;
 }
 
+double Matrix::sum()
+{
+    double sum = 0;
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < columns; j++)
+        {
+            sum += matrix[i][j];
+        }
+    }
+    return sum;
+}
 Matrix Matrix::forEach(double (*func)(double))
 {
     for (int i = 0; i < rows; i++)
@@ -284,6 +281,18 @@ Matrix Matrix::forEach(double (*func)(double))
         }
     }
     return *this;
+}
+
+Matrix addToEveryCell(Matrix & matrix, double val) 
+{
+    for (int i = 0; i < matrix.getRows(); i++)
+    {
+        for (int j = 0; j < matrix.getColumns(); j++)
+        {
+            matrix.matrix[i][j] += val;
+        }
+    }
+    return matrix;
 }
 
 std::vector<double> & Matrix::operator[](int i)

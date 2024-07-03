@@ -29,12 +29,13 @@ class Matrix
         Matrix subMatrix(const int X, const int Y, const int rows, const int columns);
         Matrix conv2d(const Matrix & kernel);
         Matrix d_conv2d(Matrix kernel);
-        Matrix maxpool(const int X, const int Y, Matrix & outputLocations);
-        Matrix upsample(Matrix & outputLocations);
+        Matrix maxPool(const int X, const int Y, Matrix & output_locations);
+        Matrix upSample(Matrix & output_locations);
         Matrix forEach(double (*func)(double));
+        double sum();
         std::vector <double> flatten();
-        void set_all_to_zero();
 
         std::vector <double> & operator[](int i);
         friend Matrix sumAll(std::vector<Matrix> matrices);
+        friend Matrix addToEveryCell(Matrix & matrix, double val);
 };

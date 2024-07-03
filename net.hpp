@@ -30,6 +30,7 @@ struct Filter
 {
     Matrix weights;
     Matrix mse;
+    double bias;
 };
 
 struct conv2dLayer
@@ -49,34 +50,35 @@ class net
     double learning_rate = 0.001;
     double dropout_rate = 0.2;
     int dense_input_size = 0;
-    std::vector <double> label_to_vector(const int label);
+    std::vector <double> getVectorFromLabel(const int label);
 
 public:
     std::vector <conv2dLayer> conv2d_layers;
     std::vector <Layer> layers;
-    std::vector <double> firstDenseLayerInput;
+    std::vector <double> first_dense_layer_input;
     std::vector <double> prediction;
-    double get_learning_rate();
-    void set_learning_rate(const double lr);
+    double getLearningRate();
+    void setLearningRate(const double lr);
 
     net(const std::vector <int> & conv2d_filters, const std::vector<int> & layer_sizes, const int input_size);
-    void make_prediction(const std::vector<double> & input, const bool dropout = false);
+
+    void makePrediction(const std::vector<double> & input, const bool dropout = false);
 
     //double relu(const double x);
     //double d_relu(const double x);
     std::vector<double> softmax(const std::vector<double>& inputs);
-    double mean_square_error(const int label);
+    double calculateMeanSquareError(const int label);
 
-    std::vector <double> d_mean_square_error(const int label);
-    std::vector <double> d_relu_vector (const Layer & layer);
-    void calculate_d_mse_for_all_layers(const int label);
-    void calculate_d_mse_for_all_fe_layers();
-    void adjust_biases();
-    void adjust_weights();
-    void back_prop(const int label);
+    std::vector <double> calculateDeltaMSE(const int label);
+    std::vector <double> calculateDeltaReluVector (const Layer & layer);
+    void calculateDenseLayersDeltaMSE(const int label);
+    void calculateConvFiltersDeltaMSE();
+    void adjustBiases();
+    void adjustWeights();
+    void applyBackPropagation(const int label);
 
-    void save_network(std::string conv2d_filename, std::string fc_filename);
-    void load_network(std::string fe_filename, std::string fc_filename);
+    void saveNetwork(std::string fe_filename, std::string fc_filename);
+    void loadNetwork(std::string fe_filename, std::string fc_filename);
 
     friend double relu(const double x);
     friend double d_relu(const double x);

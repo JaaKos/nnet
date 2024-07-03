@@ -15,12 +15,12 @@ double d_relu(const double x)
 }
 
 
-double net::get_learning_rate()
+double net::getLearningRate()
 {
     return this->learning_rate;
 }
 
-void net::set_learning_rate(const double lr)
+void net::setLearningRate(const double lr)
 {
     this->learning_rate = lr;
 }
@@ -32,7 +32,7 @@ net::net(const std::vector<int> & conv2d_filters, const std::vector<int> & layer
     std::normal_distribution<> dis(0.0, 1.0);
 
     conv2dLayer conv2d_input_layer = {Matrix(28, 28), Matrix(28, 28)};
-    Filter filter = {Matrix(3, 3), Matrix(3, 3)};
+    Filter filter = {Matrix(3, 3), Matrix(3, 3), 0.01};
 
     this->conv2d_layers.push_back(conv2d_input_layer);
 
@@ -65,6 +65,7 @@ net::net(const std::vector<int> & conv2d_filters, const std::vector<int> & layer
         }
     }
 
+
     for (int i = 0; i < layer_sizes.size(); i++)
     {
         this->layers.push_back({});
@@ -79,7 +80,7 @@ net::net(const std::vector<int> & conv2d_filters, const std::vector<int> & layer
                 {
                     this->layers[i].neurons[j].weights[k] = dis(rd) * std::sqrt(1.0/input_size);
                 }
-                this->layers[i].neurons[j].bias = 0;
+                this->layers[i].neurons[j].bias = 0.1;
             }
             else 
             {
@@ -88,14 +89,14 @@ net::net(const std::vector<int> & conv2d_filters, const std::vector<int> & layer
                 {
                     this->layers[i].neurons[j].weights[k] = dis(rd) * std::sqrt(1.0/layer_sizes[i-1]);
                 }
-                this->layers[i].neurons[j].bias = 0;
+                this->layers[i].neurons[j].bias = 0.1;
             }
         }
     } 
 }
 
 
-void net::make_prediction(const std::vector<double> & input, const bool dropout)
+void net::makePrediction(const std::vector<double> & input, const bool dropout)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -104,7 +105,7 @@ void net::make_prediction(const std::vector<double> & input, const bool dropout)
     this->prediction.clear();
     for (int i = 0; i < this->conv2d_layers.size(); i++)
     {
-        this->firstDenseLayerInput.clear();
+        this->first_dense_layer_input.clear();
         this->conv2d_layers[i].featuremaps.clear();
         this->conv2d_layers[i].featuremaps_no_activation.clear();
         this->conv2d_layers[i].d_featuremaps.clear();
@@ -120,16 +121,17 @@ void net::make_prediction(const std::vector<double> & input, const bool dropout)
     for (int i = 0; i < FirstConv2dLayer.filters.size(); i++)
     {
         Matrix FeatureMap = FirstConv2dLayer.input.conv2d(FirstConv2dLayer.filters[i].weights);
+        FeatureMap = addToEveryCell(FeatureMap, FirstConv2dLayer.filters[i].bias);
         Matrix throwaway;
-        Matrix FeatureMapNoActivation = FeatureMap.maxpool(2, 2, throwaway);
+        Matrix FeatureMapNoActivation = FeatureMap.maxPool(2, 2, throwaway);
         FirstConv2dLayer.featuremaps_no_activation.push_back(FeatureMapNoActivation);
-        Matrix withActivation = FeatureMap.forEach(relu).maxpool(2, 2, FirstConv2dLayer.d_featuremaps_upsample_positions[i]);
+        Matrix withActivation = FeatureMap.forEach(relu).maxPool(2, 2, FirstConv2dLayer.d_featuremaps_upsample_positions[i]);
         FirstConv2dLayer.featuremaps.push_back(withActivation);
 
         if (this->conv2d_layers.size() == 1)
         {
             std::vector <double> Flattened = FeatureMapNoActivation.flatten();
-            this->firstDenseLayerInput.insert(this->firstDenseLayerInput.end(), Flattened.begin(), Flattened.end());
+            this->first_dense_layer_input.insert(this->first_dense_layer_input.end(), Flattened.begin(), Flattened.end());
         }
     }
 
@@ -143,22 +145,23 @@ void net::make_prediction(const std::vector<double> & input, const bool dropout)
         for (int j = 0; j < CurrentConv2dLayer.filters.size(); j++)
         {
             Matrix FeatureMap = CurrentConv2dLayer.input.conv2d(CurrentConv2dLayer.filters[j].weights);
+            FeatureMap = addToEveryCell(FeatureMap, CurrentConv2dLayer.filters[j].bias);
             Matrix throwaway;
-            Matrix FeatureMapNoActivation = FeatureMap.maxpool(2, 2, throwaway);
+            Matrix FeatureMapNoActivation = FeatureMap.maxPool(2, 2, throwaway);
             CurrentConv2dLayer.featuremaps_no_activation.push_back(FeatureMapNoActivation);
-            Matrix withActivation = FeatureMap.forEach(relu).maxpool(2, 2, CurrentConv2dLayer.d_featuremaps_upsample_positions[j]);
+            Matrix withActivation = FeatureMap.forEach(relu).maxPool(2, 2, CurrentConv2dLayer.d_featuremaps_upsample_positions[j]);
             CurrentConv2dLayer.featuremaps.push_back(withActivation);
 
             if (i == this->conv2d_layers.size() - 1)
             {
                 std::vector <double> Flattened = FeatureMapNoActivation.flatten();
-                this->firstDenseLayerInput.insert(this->firstDenseLayerInput.end(), Flattened.begin(), Flattened.end());
+                this->first_dense_layer_input.insert(this->first_dense_layer_input.end(), Flattened.begin(), Flattened.end());
             }
         }
     }
 
-    std::vector <double> FirstLayerInput(this->firstDenseLayerInput.size());
-    for (int j = 0; j < this->firstDenseLayerInput.size(); j++) FirstLayerInput[j] = relu(this->firstDenseLayerInput[j]);
+    std::vector <double> FirstLayerInput(this->first_dense_layer_input.size());
+    for (int j = 0; j < this->first_dense_layer_input.size(); j++) FirstLayerInput[j] = relu(this->first_dense_layer_input[j]);
     Layer & FirstLayer = this->layers[0];
 
     for (int i = 0; i < FirstLayer.neurons.size(); i++) 
@@ -195,8 +198,9 @@ void net::make_prediction(const std::vector<double> & input, const bool dropout)
             }
             this->layers[i].neurons[j].output += this->layers[i].neurons[j].bias;
             this->layers[i].neurons[j].z_value = this->layers[i].neurons[j].output;
-            this->layers[i].neurons[j].output = relu(this->layers[i].neurons[j].output);
-            if (i == this->layers.size() - 1) this->prediction.push_back(this->layers[i].neurons[j].output);
+            if (i != this->layers.size() - 1) this->layers[i].neurons[j].output = relu(this->layers[i].neurons[j].output);
+            else this->prediction.push_back(this->layers[i].neurons[j].output);
+
             if ((dropout && dis(rd) < this->dropout_rate) && i != this->layers.size() - 1)
             {
                 this->layers[i].neurons[j].output = 0;
@@ -205,6 +209,8 @@ void net::make_prediction(const std::vector<double> & input, const bool dropout)
         }
     }
 
+    // for (auto i : this->prediction) std::cout << std::fixed << std::setprecision(2) << i << " ";
+    // std::cout << std::endl;
     this->prediction = softmax(this->prediction);
     // for (auto i : this->prediction) std::cout << std::fixed << std::setprecision(2) << i << " ";
     // std::cout << std::endl << std::endl;
@@ -227,9 +233,9 @@ std::vector<double> net::softmax(const std::vector<double>& inputs)
     return outputs;
 }
 
-double net::mean_square_error(const int label)
+double net::calculateMeanSquareError(const int label)
 {
-    std::vector <double> actual = this->label_to_vector(label);
+    std::vector <double> actual = this->getVectorFromLabel(label);
     double sum = 0;
     for (int i = 0; i < actual.size(); i++)
     {
@@ -238,16 +244,16 @@ double net::mean_square_error(const int label)
     return sum / actual.size();
 }
 
-std::vector <double> net::label_to_vector(const int label)
+std::vector <double> net::getVectorFromLabel(const int label)
 {
     std::vector <double> vector(10, 0);
     vector[label] = 1;
     return vector;
 }
 
-std::vector<double> net::d_mean_square_error(const int label)
+std::vector<double> net::calculateDeltaMSE(const int label)
 {
-    std::vector <double> actual = this->label_to_vector(label);
+    std::vector <double> actual = this->getVectorFromLabel(label);
     std::vector <double> error(10, 0);
     for (int i = 0; i < actual.size(); i++)
     {
@@ -256,7 +262,7 @@ std::vector<double> net::d_mean_square_error(const int label)
     return error;
 }
 
-std::vector <double> net::d_relu_vector(const Layer & layer)
+std::vector <double> net::calculateDeltaReluVector(const Layer & layer)
 {
     std::vector <double> z_values_d_relu;
     for (int i = 0; i < layer.neurons.size(); i++)
@@ -267,7 +273,7 @@ std::vector <double> net::d_relu_vector(const Layer & layer)
     return z_values_d_relu;
 }
 
-void net::adjust_biases()
+void net::adjustBiases()
 {
     for (int i = this->layers.size()-1; i >= 0; i--)
     {
@@ -276,9 +282,17 @@ void net::adjust_biases()
             this->layers[i].neurons[j].bias -= this->learning_rate * this->layers[i].mse[j];
         }
     }
+
+    for (int i = 0; i < this->conv2d_layers.size(); i++)
+    {
+        for (int j = 0; j < this->conv2d_layers[i].d_featuremaps.size(); j++)
+        {
+            this->conv2d_layers[i].filters[j].bias -= this->learning_rate * this->conv2d_layers[i].d_featuremaps[j].sum();
+        }
+    }
 }
 
-void net::adjust_weights()
+void net::adjustWeights()
 {
     for (int i = this->layers.size()-1; i >= 0; i--)
     {
@@ -306,18 +320,9 @@ void net::adjust_weights()
     }
 }
 
-void net::calculate_d_mse_for_all_layers(const int label)
+void net::calculateDenseLayersDeltaMSE(const int label)
 {
-    std::vector<double> error = this->d_mean_square_error(label);
-    std::vector <double> d_relu_values = d_relu_vector(this->layers[layers.size()-1]);
-    std::vector <double> mse_per_neuron;
-
-    for (int j = 0; j < this->layers[layers.size()-1].neurons.size(); j++)
-    {
-        mse_per_neuron.push_back(error[j] * d_relu_values[j]);
-    }
-
-    this->layers[layers.size()-1].mse = mse_per_neuron;
+    this->layers[layers.size()-1].mse = this->calculateDeltaMSE(label);
 
     for (int i = layers.size()-2; i >= 0; i--)
     {
@@ -329,7 +334,7 @@ void net::calculate_d_mse_for_all_layers(const int label)
                 error[j] += layers[i+1].neurons[k].weights[j] * layers[i+1].mse[k];
             }
         }
-        std::vector <double> d_relu_values = d_relu_vector(this->layers[i]);
+        std::vector <double> d_relu_values = calculateDeltaReluVector(this->layers[i]);
         std::vector <double> mse_per_neuron;
 
         for (int j = 0; j < this->layers[i].neurons.size(); j++)
@@ -343,7 +348,7 @@ void net::calculate_d_mse_for_all_layers(const int label)
     }
 }
 
-void net::calculate_d_mse_for_all_fe_layers() //TODO crashes if layer n has less filters than n-1
+void net::calculateConvFiltersDeltaMSE() //FIXME crashes if layer n has less filters than layer n-1
 {
     std::vector <double> error(dense_input_size, 0);
     
@@ -378,13 +383,13 @@ void net::calculate_d_mse_for_all_fe_layers() //TODO crashes if layer n has less
     int filter = 0;
     std::vector <double> mse_per_neuron;
 
-    for (int j = 0; j < firstDenseLayerInput.size(); j++)
+    for (int j = 0; j < first_dense_layer_input.size(); j++)
     {
-        mse_per_neuron.push_back(d_relu(firstDenseLayerInput[j]) * error[j]);
+        mse_per_neuron.push_back(d_relu(first_dense_layer_input[j]) * error[j]);
         // std::cout << dense_input_size << " " << firstDenseLayerInput.size() << " " << error.size() << std::endl;
         if (mse_per_neuron.size() == conv2dInputSize)
         {
-            Matrix conv2dmse = Matrix(convRowSize, convColSize, mse_per_neuron).upsample(lastConvLayer.d_featuremaps_upsample_positions[filter]);
+            Matrix conv2dmse = Matrix(convRowSize, convColSize, mse_per_neuron).upSample(lastConvLayer.d_featuremaps_upsample_positions[filter]);
             if (lastConvLayer.input_no_activation.getRows() - conv2dmse.getRows() != 2) conv2dmse = conv2dmse.addDimensions(-1, -1);
 
             lastConvLayer.filters[filter].mse = lastConvLayer.input_no_activation.conv2d(conv2dmse);
@@ -413,8 +418,10 @@ void net::calculate_d_mse_for_all_fe_layers() //TODO crashes if layer n has less
                     upsampled_fmap[k][l] *= d_relu(this->conv2d_layers[i].featuremaps_no_activation[j][k][l]);
                 }
             }
-            upsampled_fmap = upsampled_fmap.upsample(this->conv2d_layers[i].d_featuremaps_upsample_positions[j]);
+            upsampled_fmap = upsampled_fmap.upSample(this->conv2d_layers[i].d_featuremaps_upsample_positions[j]);
             this->conv2d_layers[i].filters[j].mse = this->conv2d_layers[i].input_no_activation.conv2d(upsampled_fmap);
+            conv2d_layers[i].d_featuremaps[j] = upsampled_fmap;
+            // this->conv2d_layers[i].d_featuremaps[j].print();
             // this->conv2d_layers[i].filters[j].mse.print();
             // std::cout << std::endl;
         }
@@ -422,19 +429,19 @@ void net::calculate_d_mse_for_all_fe_layers() //TODO crashes if layer n has less
     }
 }
 
-void net::back_prop(const int label)
+void net::applyBackPropagation(const int label)
 {
-    this->calculate_d_mse_for_all_layers(label);
-    this->calculate_d_mse_for_all_fe_layers();
-    this->adjust_biases();
-    this->adjust_weights();
+    this->calculateDenseLayersDeltaMSE(label);
+    this->calculateConvFiltersDeltaMSE();
+    this->adjustBiases();
+    this->adjustWeights();
     //std::cout << this->conv2d_layers[0].filters.size() << " " << this->conv2d_layers[0].convvector.size() << " " << this->conv2d_layers[0].featuremaps.size() << " " << this->conv2d_layers[0].d_featuremaps.size() << std::endl;
 }
 
-void net::save_network(std::string conv2d_filename, std::string fc_filename)
+void net::saveNetwork(std::string fe_filename, std::string fc_filename)
 {
     std::ofstream myfile;
-    myfile.open(conv2d_filename);
+    myfile.open(fe_filename);
     for (int i = 0; i < this->conv2d_layers.size(); i++)
     {
         for (int j = 0; j < this->conv2d_layers[i].filters.size(); j++)
@@ -470,7 +477,7 @@ void net::save_network(std::string conv2d_filename, std::string fc_filename)
     myfile.close();
 }
 
-void net::load_network(std::string fe_filename, std::string fc_filename)
+void net::loadNetwork(std::string fe_filename, std::string fc_filename)
 {
     std::ifstream myfile;
     myfile.open(fe_filename);
