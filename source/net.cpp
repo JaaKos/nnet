@@ -351,7 +351,6 @@ void net::calculateDenseLayersDeltaMSE(const int label)
 void net::calculateConvFiltersDeltaMSE() //FIXME crashes if layer n has less filters than layer n-1
 {
     std::vector <double> error(dense_input_size, 0);
-    
     for (int j = 0; j < layers[0].neurons[0].weights.size(); j++)
     {
         for (int k = 0; k < layers[0].neurons.size(); k++)
@@ -435,7 +434,6 @@ void net::applyBackPropagation(const int label)
     this->calculateConvFiltersDeltaMSE();
     this->adjustBiases();
     this->adjustWeights();
-    //std::cout << this->conv2d_layers[0].filters.size() << " " << this->conv2d_layers[0].convvector.size() << " " << this->conv2d_layers[0].featuremaps.size() << " " << this->conv2d_layers[0].d_featuremaps.size() << std::endl;
 }
 
 void net::saveNetwork(std::string fe_filename, std::string fc_filename)

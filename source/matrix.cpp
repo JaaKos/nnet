@@ -107,15 +107,13 @@ Matrix Matrix::expandMatrix(int X, int Y)
 
 Matrix Matrix::invertMatrix()
 {
-    Matrix newmatrix = Matrix(this->rows, this->columns);
-    double temp;
+    Matrix newmatrix = this->matrix;
+
     for (int i = 0; i < rows; i++)
     {
-        for (int j = 0; j < columns; j++)
-        {
-            newmatrix.matrix[i][j] = matrix[rows - 1 - i][columns - 1 - j];
-        }
+        std::reverse(newmatrix[i].begin(), newmatrix[i].end());
     }
+    std::reverse(newmatrix.matrix.begin(), newmatrix.matrix.end());
 
     return newmatrix;
 }
@@ -248,14 +246,13 @@ Matrix Matrix::upSample(Matrix & output_locations)
         {
             int posX = i*2;
             int posY = j*2;
-            int posX2 = i*2 + 1;
-            int posY2 = j*2 + 1;
-            newmatrix.matrix[posX][posY] = matrix[i][j] * output_locations.matrix[i][j];
-            newmatrix.matrix[posX2][posY] = matrix[i][j] * output_locations.matrix[i][j];
-            newmatrix.matrix[posX][posY2] = matrix[i][j] * output_locations.matrix[i][j];
-            newmatrix.matrix[posX2][posY2] = matrix[i][j] * output_locations.matrix[i][j];
+            newmatrix.matrix[posX][posY] = matrix[i][j] * output_locations.matrix[posX][posY];
+            newmatrix.matrix[posX + 1][posY] = matrix[i][j] * output_locations.matrix[posX + 1][posY];
+            newmatrix.matrix[posX][posY + 1] = matrix[i][j] * output_locations.matrix[posX][posY + 1];
+            newmatrix.matrix[posX + 1][posY + 1] = matrix[i][j] * output_locations.matrix[posX + 1][posY + 1];
         }
     }
+
     return newmatrix;
 }
 

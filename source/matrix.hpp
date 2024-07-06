@@ -3,6 +3,7 @@
 #include <vector>
 #include <math.h>
 #include <iomanip>
+#include <algorithm>
 
 class Matrix
 {

@@ -6,9 +6,10 @@
 #include <string>
 #include <array>
 #include <sstream>
-#include <chrono>
 #include <iomanip>
+#include <chrono>
 #include <algorithm>
+#include <numeric>
 
 
 struct Neuron 
