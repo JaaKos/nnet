@@ -366,18 +366,11 @@ void net::calculateConvFiltersDeltaMSE() //FIXME crashes if layer n has less fil
     }
 
     conv2dLayer & lastConvLayer = this->conv2d_layers[this->conv2d_layers.size()-1];
-    int rowSize = lastConvLayer.input.getRows();
-    int colSize = lastConvLayer.input.getColumns();
-
-    int kernelRowSize = lastConvLayer.filters[0].weights.getRows();
-    int kernelColSize = lastConvLayer.filters[0].weights.getColumns();
 
     int conv2dInputSize = dense_input_size / lastConvLayer.filters.size();
 
     int convRowSize = sqrt(conv2dInputSize);
     int convColSize = convRowSize;
-
-    int convSize = convRowSize * convColSize;
 
     int filter = 0;
     std::vector <double> mse_per_neuron;
